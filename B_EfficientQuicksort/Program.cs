@@ -1,4 +1,5 @@
 ﻿// https://contest.yandex.ru/contest/23815/run-report/66483350/
+// после рефакторинга https://contest.yandex.ru/contest/23815/run-report/66502252/
 
 /* 
  * -- ПРИНЦИП РАБОТЫ --
@@ -13,9 +14,9 @@
  * 3) спуск происходит вплоть до одного элемента, поэтому все элементы окажутся правильно раставленными
  * 
  * -- ВРЕМЕННАЯ СЛОЖНОСТЬ --
- * О(N^2),так как в худшем случае фунция Random.Next() будет нам выдавать индекс элемента, который не будет разбивать
- * исходный массив на 2 одинаковых по длине, а будет выдвать крайний по значению.
- * 
+ * В общем случае О(n^2), но в среднем O(n*log(n)), считалась на уроке. При больших n вероятность, 
+ * что всегда будет выбираться
+ * гриничный элемент стремится к нулю.
  * 
  * -- ПРОСТРАНСТВЕННАЯ СЛОЖНОСТЬ --
  * O(1), мы храним все элементы исходного массива, но не используем дополнительную память.
@@ -37,52 +38,52 @@ namespace B_EfficientQuicksort
         public static void Main(string[] args)
         {
             var n = ReadInt();
-            var participants = ReadParticipants(n);
+            var persons = ReadPersons(n);
 
-            QuickSort(participants, 0, n - 1);
+            QuickSort(persons, 0, n - 1);
 
-            PrintResult(participants);
+            PrintResult(persons);
 
             CloseStreams();
         }
 
-        private static void QuickSort(List<(int, int, string)> participants, int left, int right)
+        private static void QuickSort(List<Person> persons, int left, int right)
         {
             if (left < right)
             {
-                int pivot = Partition(participants, left, right);
+                int pivot = Partition(persons, left, right);
                 if (pivot > 1)
                 {
-                    QuickSort(participants, left, pivot - 1);
+                    QuickSort(persons, left, pivot - 1);
                 }
                 if (pivot + 1 < right)
                 {
-                    QuickSort(participants, pivot + 1, right);
+                    QuickSort(persons, pivot + 1, right);
                 }
             }
         }
 
-        private static int Partition(List<(int, int, string)> items, int left, int right)
+        private static int Partition(List<Person> persons, int left, int right)
         {
-            var pivot = items[_random.Next(left, right)];
+            var pivot = persons[_random.Next(left, right)];
             while (true)
             {
-                while (items[left].CompareTo(pivot) == -1)
+                while (persons[left] < pivot)
                 {
                     left++;
                 }
 
-                while (items[right].CompareTo(pivot) == 1)
+                while (persons[right] > pivot)
                 {
                     right--;
                 }
                 if (left < right)
                 {
-                    if (items[left] == items[right]) return right;
+                    if (persons[left] == persons[right]) return right;
 
-                    var temp = items[left];
-                    items[left] = items[right];
-                    items[right] = temp;
+                    var temp = persons[left];
+                    persons[left] = persons[right];
+                    persons[right] = temp;
                 }
                 else
                 {
@@ -91,9 +92,9 @@ namespace B_EfficientQuicksort
             }
         }
 
-        private static void PrintResult(List<(int, int, string)> participants)
+        private static void PrintResult(List<Person> persons)
         {
-            var result = string.Join('\n', participants.Select(p => p.Item3));
+            var result = string.Join('\n', persons.Select(p => p.Name));
             _writer.WriteLine(result);
         }
 
@@ -108,17 +109,45 @@ namespace B_EfficientQuicksort
             return int.Parse(_reader.ReadLine());
         }
 
-        private static List<(int, int, string)> ReadParticipants(int n)
+        private static List<Person> ReadPersons(int n)
         {
-            var participants = new List<(int, int, string)>();
+            var persons = new List<Person>();
             for (var i = 0; i < n; i++)
             {
                 var items = _reader.ReadLine()
                 .Split(new[] { ' ', '\t', }, StringSplitOptions.RemoveEmptyEntries);
-                participants.Add((-int.Parse(items[1]), int.Parse(items[2]), items[0]));
+                persons.Add(new Person
+                {
+                    Name = items[0],
+                    Score = int.Parse(items[1]),
+                    Fine = int.Parse(items[2])
+                });
             }
-            return participants;
+            return persons;
         }
     }
 
+    // В этом же файле, чтобы можно было загрузить в проверяющую систему
+    internal class Person : IComparable<Person>
+    {
+        public string Name { get; set; }
+        public int Score { get; set; }
+        public int Fine { get; set; }
+
+        public int CompareTo(Person other)
+        {
+            return (-Score, Fine, Name).CompareTo((-other.Score, other.Fine, other.Name));
+        }
+
+        public static bool operator <(Person op1, Person op2)
+        {
+            return op1.CompareTo(op2) < 0;
+        }
+
+        public static bool operator >(Person op1, Person op2)
+        {
+            return op1.CompareTo(op2) > 0;
+        }
+
+    }
 }
